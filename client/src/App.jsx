@@ -6,9 +6,9 @@ import Patients from './pages/Patients';
 import PatientDetails from './pages/PatientDetails';
 import Doctors from './pages/Doctors';
 import DoctorDetails from './pages/DoctorDetails';
-import Appointments from './pages/Appointments';
+import Appointments from './pages/Appointments.jsx';
 import MedicalRecords from './pages/MedicalRecords';
-import Users from './pages/Users';
+import Users from './pages/Users.jsx';
 import RoleSelector from './pages/RoleSelector';
 import './App.css';
 

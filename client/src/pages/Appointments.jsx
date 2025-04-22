@@ -10,17 +10,27 @@ const Appointments = () => {
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentAppointment, setCurrentAppointment] = useState(null);
-  const [viewMode, setViewMode] = useState('list'); // 'list' or 'calendar'
+  const [viewMode, setViewMode] = useState('list');
   const [filterStatus, setFilterStatus] = useState('all');
 
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
-        // Replace with your API call
-        const response = await fetch('/api/appointments');
+        const response = await fetch('http://localhost:8080/appointments');
         if (!response.ok) throw new Error('Failed to fetch appointments');
         const data = await response.json();
-        setAppointments(data);
+        // Transform data to match frontend expectations
+        const transformedData = data.map(item => ({
+          id: item.id,
+          patientId: item.patient_id,
+          patientName: item.patient_name,
+          doctorId: item.doctor_id,
+          doctorName: item.doctor_name,
+          date: item.date,
+          time: item.time,
+          status: 'scheduled' // Default status since backend doesn't provide it
+        }));
+        setAppointments(transformedData);
         setIsLoading(false);
       } catch (err) {
         setError(err.message);
@@ -31,72 +41,122 @@ const Appointments = () => {
     fetchAppointments();
   }, []);
 
-  const handleCreateAppointment = (appointmentData) => {
-    fetch('/api/appointments', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(appointmentData)
-    })
-      .then(response => {
-        if (!response.ok) throw new Error('Failed to create appointment');
-        return response.json();
-      })
-      .then(data => {
-        setAppointments([...appointments, data]);
-        setIsModalOpen(false);
-        setCurrentAppointment(null);
-      })
-      .catch(err => setError(err.message));
-  };
-
-  const handleUpdateAppointment = (appointmentData) => {
-    fetch(`/api/appointments/${appointmentData.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(appointmentData)
-    })
-      .then(response => {
-        if (!response.ok) throw new Error('Failed to update appointment');
-        return response.json();
-      })
-      .then(data => {
-        setAppointments(appointments.map(app => 
-          app.id === data.id ? data : app
-        ));
-        setIsModalOpen(false);
-        setCurrentAppointment(null);
-      })
-      .catch(err => setError(err.message));
-  };
-
-  const handleDeleteAppointment = (id) => {
-    if (window.confirm('Are you sure you want to delete this appointment?')) {
-      fetch(`/api/appointments/${id}`, { method: 'DELETE' })
-        .then(response => {
-          if (!response.ok) throw new Error('Failed to delete appointment');
-          setAppointments(appointments.filter(app => app.id !== id));
+  const handleCreateAppointment = async (appointmentData) => {
+    try {
+      const response = await fetch('http://localhost:8080/appointments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          patient_id: parseInt(appointmentData.patientId),
+          doctor_id: parseInt(appointmentData.doctorId),
+          date: appointmentData.date,
+          time: appointmentData.time
         })
-        .catch(err => setError(err.message));
+      });
+      
+      if (!response.ok) throw new Error('Failed to create appointment');
+      
+      const data = await response.json();
+      const newAppointment = {
+        id: data.id,
+        patientId: appointmentData.patientId,
+        patientName: patients.find(p => p.id === appointmentData.patientId)?.name || 'Unknown',
+        doctorId: appointmentData.doctorId,
+        doctorName: doctors.find(d => d.id === appointmentData.doctorId)?.name || 'Unknown',
+        date: appointmentData.date,
+        time: appointmentData.time,
+        status: 'scheduled'
+      };
+      
+      setAppointments([...appointments, newAppointment]);
+      setIsModalOpen(false);
+      setCurrentAppointment(null);
+    } catch (err) {
+      setError(err.message);
     }
   };
 
-  const handleSearch = (query) => {
-    // Implement search functionality
-    setIsLoading(true);
-    fetch(`/api/appointments?search=${query}`)
-      .then(response => {
-        if (!response.ok) throw new Error('Search failed');
-        return response.json();
-      })
-      .then(data => {
-        setAppointments(data);
-        setIsLoading(false);
-      })
-      .catch(err => {
-        setError(err.message);
-        setIsLoading(false);
+  const handleUpdateAppointment = async (appointmentData) => {
+    try {
+      const response = await fetch(`http://localhost:8080/appointments/${appointmentData.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          date: appointmentData.date,
+          time: appointmentData.time
+          // Add status if your backend supports it
+        })
       });
+      
+      if (!response.ok) throw new Error('Failed to update appointment');
+      
+      const updatedAppointment = {
+        ...appointmentData,
+        patientName: patients.find(p => p.id === appointmentData.patientId)?.name || 'Unknown',
+        doctorName: doctors.find(d => d.id === appointmentData.doctorId)?.name || 'Unknown'
+      };
+      
+      setAppointments(appointments.map(app => 
+        app.id === appointmentData.id ? updatedAppointment : app
+      ));
+      setIsModalOpen(false);
+      setCurrentAppointment(null);
+    } catch (err) {
+      setError(err.message);
+    }
   };
+
+  const handleDeleteAppointment = async (id) => {
+    if (window.confirm('Are you sure you want to delete this appointment?')) {
+      try {
+        const response = await fetch(`http://localhost:8080/appointments/${id}`, { 
+          method: 'DELETE' 
+        });
+        
+        if (!response.ok) throw new Error('Failed to delete appointment');
+        
+        setAppointments(appointments.filter(app => app.id !== id));
+      } catch (err) {
+        setError(err.message);
+      }
+    }
+  };
+
+  const [patients, setPatients] = useState([]);
+  const [doctors, setDoctors] = useState([]);
+
+  useEffect(() => {
+    // Fetch patients and doctors when component mounts
+    const fetchData = async () => {
+      try {
+        const [patientsRes, doctorsRes] = await Promise.all([
+          fetch('http://localhost:8080/patients'),
+          fetch('http://localhost:8080/doctors')
+        ]);
+        
+        if (patientsRes.ok) {
+          const patientsData = await patientsRes.json();
+          setPatients(patientsData.map(p => ({
+            id: p.patient_id,
+            name: p.name
+          })));
+        }
+        
+        if (doctorsRes.ok) {
+          const doctorsData = await doctorsRes.json();
+          setDoctors(doctorsData.map(d => ({
+            id: d.doctor_id,
+            name: d.name,
+            specialization: d.specialization || 'General'
+          })));
+        }
+      } catch (err) {
+        console.error('Error fetching data:', err);
+      }
+    };
+    
+    fetchData();
+  }, []);
 
   const filteredAppointments = filterStatus === 'all' 
     ? appointments 
@@ -123,11 +183,19 @@ const Appointments = () => {
     },
   ];
 
-  return (
+
+
+// AppointmentForm component remains the same
+// ...
+
+return (
     <div className="appointments-page">
       <PageHeader 
         title="Appointments" 
-        onSearch={handleSearch} 
+        onSearch={(query) => {
+            // Implement search if backend supports it
+            console.log('Search:', query);
+          }} 
       />
       
       <div className="content-container">

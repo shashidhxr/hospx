@@ -11,23 +11,25 @@
 void registerRecordRoutes(crow::SimpleApp& app){
 
 
-// CROW_ROUTE(app, "/records")
-        // .methods("GET"_method)([](){
-        //     auto records = MedicalRecord::getAllRecordsFromDatabase();
-        //     crow::json::wvalue result;
-        //     for (size_t i = 0; i < records.size(); i++) {
-        //         result[i]["id"] = records[i]->getRecordID();
-        //         result[i]["patient_id"] = records[i]->getPatient()->getPatientID();
-        //         result[i]["patient_name"] = records[i]->getPatient()->getName();
-        //         result[i]["doctor_id"] = records[i]->getDoctor()->getDoctorID();
-        //         result[i]["doctor_name"] = records[i]->getDoctor()->getName();
-        //         result[i]["diagnosis"] = records[i]->getDiagnosis();
-        //         result[i]["treatment"] = records[i]->getTreatment();
-        //         result[i]["date"] = records[i]->date;
-        //         delete records[i];
-        //     }
-        //     return crow::response{result};
-        // });
+        CROW_ROUTE(app, "/records")
+        .methods("GET"_method)([](){
+            auto records = MedicalRecord::getAllRecordsFromDatabase();
+            crow::json::wvalue result;
+            for (size_t i = 0; i < records.size(); i++) {
+                result[i]["id"] = records[i]->getRecordID();
+                result[i]["patient_id"] = records[i]->getPatient()->getPatientID();
+                result[i]["patient_name"] = records[i]->getPatient()->getName();
+                result[i]["doctor_id"] = records[i]->getDoctor()->getDoctorID();
+                result[i]["doctor_name"] = records[i]->getDoctor()->getName();
+                result[i]["diagnosis"] = records[i]->getDiagnosis();
+                result[i]["treatment"] = records[i]->getTreatment();
+                result[i]["date"] = records[i]->getDate();
+                delete records[i];
+            }
+            auto res = crow::response{result};
+            add_cors_headers(res);
+            return res;
+        });
 
         CROW_ROUTE(app, "/records")
         .methods("POST"_method)([](const crow::request& req){
@@ -55,9 +57,13 @@ void registerRecordRoutes(crow::SimpleApp& app){
                     result["id"] = record.getRecordID();
                     return crow::response{result};
                 }
-                return crow::response(500, "Failed to save medical record");
+                auto res = crow::response(500, "Failed to save medical record");
+                add_cors_headers(res);
+                return res;
             } catch (const std::exception& e) {
-                return crow::response(500, e.what());
+                auto res = crow::response(500, e.what());
+                add_cors_headers(res);
+                return res;
             }
         });
 
@@ -79,7 +85,10 @@ void registerRecordRoutes(crow::SimpleApp& app){
             result["date"] = record->getDate();
             
             delete record;
-            return crow::response{result};
+
+            auto res = crow::response{result};
+            add_cors_headers(res);
+            return res;
         });
 
     }

@@ -10,19 +10,57 @@ const MedicalRecords = () => {
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentRecord, setCurrentRecord] = useState(null);
-  const [viewMode, setViewMode] = useState('all'); // 'all', 'recent', 'archived'
   const [patients, setPatients] = useState([]);
+  const [doctors, setDoctors] = useState([]);
   const [selectedPatient, setSelectedPatient] = useState('');
 
   useEffect(() => {
-    const fetchRecords = async () => {
+    const fetchData = async () => {
       try {
         setIsLoading(true);
-        // Replace with your API call
-        const response = await fetch(`/api/records${selectedPatient ? `?patientId=${selectedPatient}` : ''}`);
-        if (!response.ok) throw new Error('Failed to fetch medical records');
-        const data = await response.json();
-        setRecords(data);
+        
+        // Fetch patients
+        const patientsRes = await fetch('http://localhost:8080/patients');
+        if (!patientsRes.ok) throw new Error('Failed to fetch patients');
+        const patientsData = await patientsRes.json();
+        setPatients(patientsData.map(p => ({
+          id: p.patient_id,
+          name: p.name
+        })));
+
+        // Fetch doctors
+        const doctorsRes = await fetch('http://localhost:8080/doctors');
+        if (!doctorsRes.ok) throw new Error('Failed to fetch doctors');
+        const doctorsData = await doctorsRes.json();
+        setDoctors(doctorsData.map(d => ({
+          id: d.doctor_id,
+          name: d.name,
+          specialization: d.specialization || 'General'
+        })));
+
+        // Fetch records
+        const url = selectedPatient 
+          ? `http://localhost:8080/records/patient/${selectedPatient}`
+          : 'http://localhost:8080/records';
+        
+        const recordsRes = await fetch(url);
+        if (!recordsRes.ok) throw new Error('Failed to fetch medical records');
+        const recordsData = await recordsRes.json();
+        
+        // Transform data to match frontend expectations
+        const transformedRecords = recordsData.map(record => ({
+          id: record.id || record.recordID,
+          patientId: record.patient_id,
+          patientName: record.patient_name,
+          doctorId: record.doctor_id,
+          doctorName: record.doctor_name,
+          date: record.date,
+          diagnosis: record.diagnosis,
+          treatment: record.treatment,
+          recordType: 'consultation' // Default since backend doesn't provide this
+        }));
+        
+        setRecords(transformedRecords);
         setIsLoading(false);
       } catch (err) {
         setError(err.message);
@@ -30,108 +68,93 @@ const MedicalRecords = () => {
       }
     };
 
-    const fetchPatients = async () => {
-      try {
-        const response = await fetch('/api/patients');
-        if (response.ok) {
-          const data = await response.json();
-          setPatients(data);
-        }
-      } catch (err) {
-        console.error('Failed to fetch patients:', err);
-      }
-    };
-
-    fetchRecords();
-    fetchPatients();
+    fetchData();
   }, [selectedPatient]);
 
-  const handleCreateRecord = (recordData) => {
-    fetch('/api/records', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(recordData)
-    })
-      .then(response => {
-        if (!response.ok) throw new Error('Failed to create medical record');
-        return response.json();
-      })
-      .then(data => {
-        setRecords([...records, data]);
-        setIsModalOpen(false);
-        setCurrentRecord(null);
-      })
-      .catch(err => setError(err.message));
-  };
-
-  const handleUpdateRecord = (recordData) => {
-    fetch(`/api/records/${recordData.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(recordData)
-    })
-      .then(response => {
-        if (!response.ok) throw new Error('Failed to update medical record');
-        return response.json();
-      })
-      .then(data => {
-        setRecords(records.map(record => 
-          record.id === data.id ? data : record
-        ));
-        setIsModalOpen(false);
-        setCurrentRecord(null);
-      })
-      .catch(err => setError(err.message));
-  };
-
-  const handleDeleteRecord = (id) => {
-    if (window.confirm('Are you sure you want to delete this medical record?')) {
-      fetch(`/api/records/${id}`, { method: 'DELETE' })
-        .then(response => {
-          if (!response.ok) throw new Error('Failed to delete medical record');
-          setRecords(records.filter(record => record.id !== id));
+  const handleCreateRecord = async (recordData) => {
+    try {
+      const response = await fetch('http://localhost:8080/records', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          patient_id: parseInt(recordData.patientId),
+          doctor_id: parseInt(recordData.doctorId),
+          diagnosis: recordData.diagnosis,
+          treatment: recordData.treatment
         })
-        .catch(err => setError(err.message));
+      });
+
+      if (!response.ok) throw new Error('Failed to create medical record');
+      
+      const data = await response.json();
+      const newRecord = {
+        id: data.id,
+        patientId: recordData.patientId,
+        patientName: patients.find(p => p.id === recordData.patientId)?.name || 'Unknown',
+        doctorId: recordData.doctorId,
+        doctorName: doctors.find(d => d.id === recordData.doctorId)?.name || 'Unknown',
+        date: new Date().toISOString().split('T')[0], // Default date
+        diagnosis: recordData.diagnosis,
+        treatment: recordData.treatment,
+        recordType: recordData.recordType
+      };
+
+      setRecords([...records, newRecord]);
+      setIsModalOpen(false);
+      setCurrentRecord(null);
+    } catch (err) {
+      setError(err.message);
     }
   };
 
-  const handleSearch = (query) => {
-    setIsLoading(true);
-    fetch(`/api/records?search=${query}${selectedPatient ? `&patientId=${selectedPatient}` : ''}`)
-      .then(response => {
-        if (!response.ok) throw new Error('Search failed');
-        return response.json();
-      })
-      .then(data => {
-        setRecords(data);
-        setIsLoading(false);
-      })
-      .catch(err => {
-        setError(err.message);
-        setIsLoading(false);
+  const handleUpdateRecord = async (recordData) => {
+    try {
+      const response = await fetch(`http://localhost:8080/records/${recordData.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          diagnosis: recordData.diagnosis,
+          treatment: recordData.treatment
+        })
       });
+
+      if (!response.ok) throw new Error('Failed to update medical record');
+      
+      const updatedRecord = {
+        ...recordData,
+        patientName: patients.find(p => p.id === recordData.patientId)?.name || 'Unknown',
+        doctorName: doctors.find(d => d.id === recordData.doctorId)?.name || 'Unknown'
+      };
+
+      setRecords(records.map(record => 
+        record.id === recordData.id ? updatedRecord : record
+      ));
+      setIsModalOpen(false);
+      setCurrentRecord(null);
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
-  const handleExport = () => {
-    // Implement export functionality
-    alert('Export functionality would be implemented here');
+  const handleDeleteRecord = async (id) => {
+    if (window.confirm('Are you sure you want to delete this medical record?')) {
+      try {
+        const response = await fetch(`http://localhost:8080/records/${id}`, { 
+          method: 'DELETE' 
+        });
+        
+        if (!response.ok) throw new Error('Failed to delete medical record');
+        
+        setRecords(records.filter(record => record.id !== id));
+      } catch (err) {
+        setError(err.message);
+      }
+    }
   };
 
   const handlePatientChange = (e) => {
     setSelectedPatient(e.target.value);
   };
-
-  const filteredRecords = records.filter(record => {
-    if (viewMode === 'all') return true;
-    if (viewMode === 'recent') {
-      const recordDate = new Date(record.date);
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      return recordDate >= thirtyDaysAgo;
-    }
-    if (viewMode === 'archived') return record.archived;
-    return true;
-  });
 
   const columns = [
     { field: 'patientName', header: 'Patient Name', sortable: true },
@@ -150,32 +173,14 @@ const MedicalRecords = () => {
     <div className="medical-records-page">
       <PageHeader 
         title="Medical Records" 
-        onSearch={handleSearch} 
+        onSearch={(query) => {
+          // Implement search if backend supports it
+          console.log('Search:', query);
+        }} 
       />
       
       <div className="content-container">
         <div className="page-toolbar">
-          <div className="view-toggle-pills">
-            <button 
-              className={`pill-btn ${viewMode === 'all' ? 'active' : ''}`}
-              onClick={() => setViewMode('all')}
-            >
-              All Records
-            </button>
-            <button 
-              className={`pill-btn ${viewMode === 'recent' ? 'active' : ''}`}
-              onClick={() => setViewMode('recent')}
-            >
-              Recent
-            </button>
-            <button 
-              className={`pill-btn ${viewMode === 'archived' ? 'active' : ''}`}
-              onClick={() => setViewMode('archived')}
-            >
-              Archived
-            </button>
-          </div>
-          
           <div className="filter-section">
             <div className="patient-filter">
               <User size={16} />
@@ -212,7 +217,7 @@ const MedicalRecords = () => {
         ) : (
           <DataTable 
             columns={columns} 
-            data={filteredRecords}
+            data={records}
             onView={(id) => {
               const record = records.find(rec => rec.id === id);
               setCurrentRecord(record);
@@ -224,7 +229,6 @@ const MedicalRecords = () => {
               setIsModalOpen(true);
             }}
             onDelete={handleDeleteRecord}
-            onExport={handleExport}
           />
         )}
       </div>
@@ -246,43 +250,31 @@ const MedicalRecords = () => {
             setCurrentRecord(null);
           }}
           patients={patients}
+          doctors={doctors}
         />
       </Modal>
     </div>
   );
 };
 
-const MedicalRecordForm = ({ record, onSubmit, onCancel, patients }) => {
+const MedicalRecordForm = ({ record, onSubmit, onCancel, patients, doctors }) => {
   const [formData, setFormData] = useState({
     patientId: '',
     doctorId: '',
     date: new Date().toISOString().split('T')[0],
     diagnosis: '',
     treatment: '',
-    prescription: '',
-    notes: '',
     recordType: 'consultation',
     ...record
   });
   
   const [errors, setErrors] = useState({});
-  const [doctors, setDoctors] = useState([]);
-  
-  useEffect(() => {
-    // Fetch doctors for dropdown
-    fetch('/api/doctors')
-      .then(response => response.json())
-      .then(data => setDoctors(data))
-      .catch(err => console.error('Failed to fetch doctors:', err));
-  }, []);
 
   const validateForm = () => {
     const newErrors = {};
     if (!formData.patientId) newErrors.patientId = 'Patient is required';
     if (!formData.doctorId) newErrors.doctorId = 'Doctor is required';
-    if (!formData.date) newErrors.date = 'Date is required';
     if (!formData.diagnosis) newErrors.diagnosis = 'Diagnosis is required';
-    if (!formData.recordType) newErrors.recordType = 'Record type is required';
     return newErrors;
   };
 
@@ -317,7 +309,7 @@ const MedicalRecordForm = ({ record, onSubmit, onCancel, patients }) => {
             value={formData.patientId}
             onChange={handleChange}
             className={errors.patientId ? 'error' : ''}
-            disabled={record}
+            disabled={!!record}
           >
             <option value="">Select Patient</option>
             {patients.map(patient => (
@@ -358,9 +350,7 @@ const MedicalRecordForm = ({ record, onSubmit, onCancel, patients }) => {
             name="date"
             value={formData.date}
             onChange={handleChange}
-            className={errors.date ? 'error' : ''}
           />
-          {errors.date && <span className="error-message">{errors.date}</span>}
         </div>
         
         <div className="form-group">
@@ -370,7 +360,6 @@ const MedicalRecordForm = ({ record, onSubmit, onCancel, patients }) => {
             name="recordType"
             value={formData.recordType}
             onChange={handleChange}
-            className={errors.recordType ? 'error' : ''}
           >
             <option value="consultation">Consultation</option>
             <option value="lab_result">Lab Result</option>
@@ -378,7 +367,6 @@ const MedicalRecordForm = ({ record, onSubmit, onCancel, patients }) => {
             <option value="follow_up">Follow Up</option>
             <option value="emergency">Emergency</option>
           </select>
-          {errors.recordType && <span className="error-message">{errors.recordType}</span>}
         </div>
       </div>
       
@@ -401,28 +389,6 @@ const MedicalRecordForm = ({ record, onSubmit, onCancel, patients }) => {
           id="treatment"
           name="treatment"
           value={formData.treatment || ''}
-          onChange={handleChange}
-          rows="3"
-        />
-      </div>
-      
-      <div className="form-group">
-        <label htmlFor="prescription">Prescription</label>
-        <textarea
-          id="prescription"
-          name="prescription"
-          value={formData.prescription || ''}
-          onChange={handleChange}
-          rows="3"
-        />
-      </div>
-      
-      <div className="form-group">
-        <label htmlFor="notes">Additional Notes</label>
-        <textarea
-          id="notes"
-          name="notes"
-          value={formData.notes || ''}
           onChange={handleChange}
           rows="3"
         />

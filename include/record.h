@@ -24,6 +24,7 @@ public:
     static MedicalRecord* getRecordFromDatabase(int recordID);
     static std::vector<MedicalRecord*> getRecordsForPatient(int patientID);
     std::vector<MedicalRecord*> getRecordsByDoctor(int doctorID);
+    static std::vector<MedicalRecord*> getAllRecordsFromDatabase();
                   
     // Getters
     int getRecordID() const;

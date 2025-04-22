@@ -17,7 +17,7 @@ const Users = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await fetch('http://localhost:18080/users');
+        const response = await fetch('http://localhost:8080/users');
         if (!response.ok) throw new Error('Failed to fetch users');
         const data = await response.json();
         // Convert the array-like object to a proper array
@@ -40,7 +40,7 @@ const Users = () => {
   }, []);
 
   const handleCreateUser = (userData) => {
-    fetch('http://localhost:18080/users', {
+    fetch('http://localhost:8080/users', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -71,7 +71,7 @@ const Users = () => {
   const handleUpdateUser = (userData) => {
     // Note: Your backend doesn't currently have an update endpoint
     // This is a placeholder implementation
-    fetch(`http://localhost:18080/users/${userData.id}`, {
+    fetch(`http://localhost:8080/users/${userData.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -103,7 +103,7 @@ const Users = () => {
     if (window.confirm('Are you sure you want to delete this user?')) {
       // Note: Your backend doesn't currently have a delete endpoint
       // This is a placeholder implementation
-      fetch(`http://localhost:18080/users/${id}`, { method: 'DELETE' })
+      fetch(`http://localhost:8080/users/${id}`, { method: 'DELETE' })
         .then(response => {
           if (!response.ok) throw new Error('Failed to delete user');
           setUsers(users.filter(user => user.id !== id));
@@ -117,7 +117,7 @@ const Users = () => {
     
     // Note: Your backend doesn't currently have a password reset endpoint
     // This is a placeholder implementation
-    fetch(`http://localhost:18080/users/${userToResetPassword.id}/reset-password`, {
+    fetch(`http://localhost:8080/users/${userToResetPassword.id}/reset-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password })

@@ -202,6 +202,41 @@ std::vector<MedicalRecord*> MedicalRecord::getRecordsByDoctor(int doctorID) {
     return records;
 }
 
+std::vector<MedicalRecord*> MedicalRecord::getAllRecordsFromDatabase() {
+    std::vector<MedicalRecord*> records;
+    sqlite3* db = DatabaseHandler::getInstance().getDatabase();
+    sqlite3_stmt* stmt;
+
+    std::string sql = "SELECT recordID, patientID, doctorID, diagnosis, treatment, date "
+                     "FROM MedicalRecords ORDER BY date DESC;";
+
+    if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK) {
+        throw std::runtime_error("Failed to prepare select all records statement: " + 
+                               std::string(sqlite3_errmsg(db)));
+    }
+
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        int id = sqlite3_column_int(stmt, 0);
+        int patientID = sqlite3_column_int(stmt, 1);
+        int doctorID = sqlite3_column_int(stmt, 2);
+        std::string diagnosis = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3));
+        std::string treatment = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 4));
+        std::string date = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 5));
+
+        Patient* patient = Patient::getPatientFromDatabase(patientID);
+        Doctor* doctor = Doctor::getDoctorFromDatabase(doctorID);
+
+        if (patient && doctor) {
+            MedicalRecord* record = new MedicalRecord(id, patient, doctor, diagnosis, treatment);
+            record->date = date;
+            records.push_back(record);
+        }
+    }
+
+    sqlite3_finalize(stmt);
+    return records;
+}
+
 // Getters
 int MedicalRecord::getRecordID() const { return recordID; }
 Patient* MedicalRecord::getPatient() const { return patient; }
