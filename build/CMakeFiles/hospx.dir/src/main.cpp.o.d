@@ -825,6 +825,7 @@ CMakeFiles/hospx.dir/src/main.cpp.o: \
  /home/shashidhar/dev0/hospx/include/patient.h \
  /home/shashidhar/dev0/hospx/include/user.h \
  /home/shashidhar/dev0/hospx/include/appointment.h \
+ /home/shashidhar/dev0/hospx/include/cors_config.h \
  /home/shashidhar/dev0/hospx/include/doctor.h \
  /home/shashidhar/dev0/hospx/include/receptionist.h \
  /home/shashidhar/dev0/hospx/include/admin.h \
@@ -842,4 +843,6 @@ CMakeFiles/hospx.dir/src/main.cpp.o: \
  /home/shashidhar/dev0/hospx/api/report_api.h \
  /home/shashidhar/dev0/hospx/include/report.h \
  /home/shashidhar/dev0/hospx/api/admin_api.h \
- /home/shashidhar/dev0/hospx/include/admin.h
+ /home/shashidhar/dev0/hospx/include/admin.h \
+ /home/shashidhar/dev0/hospx/include/db_seed.h \
+ /home/shashidhar/dev0/hospx/include/api_server.h

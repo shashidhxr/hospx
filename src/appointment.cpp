@@ -188,6 +188,43 @@ std::vector<Appointment*> Appointment::getAppointmentsForDoctor(int doctorID) {
     return appointments;
 }
 
+std::vector<Appointment*> Appointment::getAllAppointmentsFromDatabase() {
+    std::vector<Appointment*> appointments;
+    sqlite3* db = DatabaseHandler::getInstance().getDatabase();
+    sqlite3_stmt* stmt;
+    
+    std::string sql = "SELECT a.appointmentID, a.patientID, a.doctorID, a.date, a.time, a.status "
+                     "FROM Appointments a "
+                     "ORDER BY a.date, a.time;";
+    
+    if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK) {
+        throw std::runtime_error("Failed to prepare select statement: " + 
+                               std::string(sqlite3_errmsg(db)));
+    }
+    
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        int id = sqlite3_column_int(stmt, 0);
+        int patientID = sqlite3_column_int(stmt, 1);
+        int doctorID = sqlite3_column_int(stmt, 2);
+        std::string date = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3));
+        std::string time = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 4));
+        
+        Patient* patient = Patient::getPatientFromDatabase(patientID);
+        Doctor* doctor = Doctor::getDoctorFromDatabase(doctorID);
+        
+        if (patient && doctor) {
+            appointments.push_back(new Appointment(id, patient, doctor, date, time));
+        } else {
+            // Clean up if we couldn't get both patient and doctor
+            if (patient) delete patient;
+            if (doctor) delete doctor;
+        }
+    }
+    
+    sqlite3_finalize(stmt);
+    return appointments;
+}
+
 // Getters
 int Appointment::getAppointmentID() const { return appointmentID; }
 Patient* Appointment::getPatient() const { return patient; }

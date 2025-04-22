@@ -165,6 +165,35 @@ std::vector<MedicalRecord*> Patient::viewMedicalRecords() {
     return records;
 }
 
+std::vector<Patient*> Patient::getAllPatientsFromDatabase() {
+    std::vector<Patient*> patients;
+    sqlite3* db = DatabaseHandler::getInstance().getDatabase();
+    sqlite3_stmt* stmt;
+    
+    std::string sql = "SELECT p.patientID, p.userID, p.age, p.gender, u.name, u.contact "
+                     "FROM Patients p JOIN Users u ON p.userID = u.userID "
+                     "WHERE u.type = 'patient';";
+    
+    if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK) {
+        throw std::runtime_error("Failed to prepare select all patients statement: " + 
+                               std::string(sqlite3_errmsg(db)));
+    }
+    
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        int patientID = sqlite3_column_int(stmt, 0);
+        int userID = sqlite3_column_int(stmt, 1);
+        int age = sqlite3_column_int(stmt, 2);
+        std::string gender = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3));
+        std::string name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 4));
+        std::string contact = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 5));
+        
+        patients.push_back(new Patient(userID, name, contact, patientID, age, gender));
+    }
+    
+    sqlite3_finalize(stmt);
+    return patients;
+}
+
 // Getters
 int Patient::getPatientID() const { return patientID; }
 int Patient::getAge() const { return age; }

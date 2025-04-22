@@ -1,12 +1,20 @@
 #include <iostream>
 #include "database_handler.h"
 #include "api_server.h"
+#include "db_seed.h"
+#include <cstdlib> // for std::remove
 
 int main() {
     try {
+        // Delete existing database file to start fresh
+        std::remove("hospital.db");
+        
         // Initialize database
         DatabaseHandler& dbHandler = DatabaseHandler::getInstance("hospital.db");
-        dbHandler.initializeDatabase();
+        
+        // Create schema and seed data in correct order
+        initializeDatabaseSchema(dbHandler);
+        seedDatabase(dbHandler);
         
         // Create API server
         ApiServer server;

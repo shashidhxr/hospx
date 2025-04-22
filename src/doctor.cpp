@@ -143,6 +143,35 @@ std::vector<Appointment*> Doctor::viewAppointments() {
     return appointments;
 }
 
+std::vector<Doctor*> Doctor::getAllDoctorsFromDatabase() {
+    std::vector<Doctor*> doctors;
+    sqlite3* db = DatabaseHandler::getInstance().getDatabase();
+    sqlite3_stmt* stmt;
+
+    // Query to get all doctors with their user information
+    std::string sql = "SELECT d.doctorID, d.userID, d.specialization, u.name, u.contact "
+                     "FROM Doctors d JOIN Users u ON d.userID = u.userID "
+                     "WHERE u.type = 'doctor';";
+
+    if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK) {
+        std::cerr << "Failed to prepare statement: " << sqlite3_errmsg(db) << std::endl;
+        return doctors;
+    }
+
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        int doctorID = sqlite3_column_int(stmt, 0);
+        int userID = sqlite3_column_int(stmt, 1);
+        std::string specialization = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
+        std::string name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3));
+        std::string contact = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 4));
+
+        doctors.push_back(new Doctor(userID, name, contact, doctorID, specialization));
+    }
+
+    sqlite3_finalize(stmt);
+    return doctors;
+}
+
 // Getters
 int Doctor::getDoctorID() const { return doctorID; }
 std::string Doctor::getSpecialization() const { return specialization; }
