@@ -10,21 +10,24 @@
 void registerPatientRoutes(crow::SimpleApp& app){
 
  // Patient endpoints
-        // CROW_ROUTE(app, "/patients")
-        // .methods("GET"_method)([](){
-        //     auto patients = Patient::getAllPatientsFromDatabase();
-        //     crow::json::wvalue result;
-        //     for (size_t i = 0; i < patients.size(); i++) {
-        //         result[i]["id"] = patients[i]->getPatientID();
-        //         result[i]["user_id"] = patients[i]->getUserID();
-        //         result[i]["name"] = patients[i]->getName();
-        //         result[i]["contact"] = patients[i]->getContact();
-        //         result[i]["age"] = patients[i]->getAge();
-        //         result[i]["gender"] = patients[i]->getGender();
-        //         delete patients[i];
-        //     }
-        //     return crow::response{result};
-        // });
+        CROW_ROUTE(app, "/patients")
+        .methods("GET"_method)([](){
+            auto patients = Patient::getAllPatientsFromDatabase();
+            crow::json::wvalue result;
+            for (size_t i = 0; i < patients.size(); i++) {
+                result[i]["id"] = patients[i]->getPatientID();
+                result[i]["user_id"] = patients[i]->getUserID();
+                result[i]["name"] = patients[i]->getName();
+                result[i]["contact"] = patients[i]->getContact();
+                result[i]["age"] = patients[i]->getAge();
+                result[i]["gender"] = patients[i]->getGender();
+                delete patients[i];
+            }
+            // return crow::response{result};
+            auto res = crow::response{result};
+            add_cors_headers(res);
+            return res;
+        });
 
         CROW_ROUTE(app, "/patients")
         .methods("POST"_method)([](const crow::request& req){
@@ -47,7 +50,9 @@ void registerPatientRoutes(crow::SimpleApp& app){
                 }
                 return crow::response(500, "Failed to save patient");
             } catch (const std::exception& e) {
-                return crow::response(500, e.what());
+                auto res = crow::response(500, e.what());
+                add_cors_headers(res);
+                return res;
             }
         });
 
@@ -67,7 +72,10 @@ void registerPatientRoutes(crow::SimpleApp& app){
             result["gender"] = patient->getGender();
             
             delete patient;
-            return crow::response{result};
+
+            auto res = crow::response{result};
+            add_cors_headers(res);
+            return res;
         });
 
         CROW_ROUTE(app, "/patients/<int>/appointments")
@@ -83,7 +91,9 @@ void registerPatientRoutes(crow::SimpleApp& app){
                 result[i]["time"] = appointments[i]->getTime();
                 delete appointments[i];
             }
-            return crow::response{result};
+            auto res = crow::response{result};
+            add_cors_headers(res);
+            return res;
         });
 
         CROW_ROUTE(app, "/patients/<int>/records")
@@ -99,7 +109,9 @@ void registerPatientRoutes(crow::SimpleApp& app){
                 result[i]["date"] = records[i]->getDate();
                 delete records[i];
             }
-            return crow::response{result};
+            auto res = crow::response{result};
+            add_cors_headers(res);
+            return res;
         });
     }
 

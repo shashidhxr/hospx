@@ -25,6 +25,7 @@ public:
     static Appointment* getAppointmentFromDatabase(int appointmentID); 
     static std::vector<Appointment*> getAppointmentsForPatient(int patientID);
     static std::vector<Appointment*> getAppointmentsForDoctor(int doctorID);
+    static std::vector<Appointment*> getAllAppointmentsFromDatabase();
                 
     // Getters
     int getAppointmentID() const;

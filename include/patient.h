@@ -4,6 +4,8 @@
 #include "user.h"
 #include "appointment.h"
 // #include "record.h"
+#include "cors_config.h"
+
 class MedicalRecord;  // forward declaration
 
 #include <string>
@@ -26,6 +28,7 @@ public:
     std::vector<Appointment*> viewAppointments();
             
     // Patient specific methods
+    static std::vector<Patient*> getAllPatientsFromDatabase();
     void bookAppointment();
     std::vector<MedicalRecord*> viewMedicalRecords();
 

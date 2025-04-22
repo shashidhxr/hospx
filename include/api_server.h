@@ -10,6 +10,7 @@
 #include "appointment.h"
 #include "record.h"
 #include "report.h"
+
 #include <memory>
 
 #include "user_api.h"
@@ -19,6 +20,13 @@
 #include "record_api.h"
 #include "report_api.h"
 #include "admin_api.h"
+// #include "login_api.h"
+
+// inline void add_cors_headers(crow::response& res) {
+//     res.add_header("Access-Control-Allow-Origin", "*");
+//     res.add_header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+//     res.add_header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+// }
 
 class ApiServer {
 public:
@@ -59,6 +67,9 @@ private:
         
         // Admin endpoints
         registerAdminRoutes(app);
+
+        // login endpoints
+        // registerLoginRoutes(app);
     }
 };
 

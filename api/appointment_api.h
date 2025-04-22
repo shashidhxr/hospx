@@ -10,22 +10,24 @@
 void registerAppointmentRoutes(crow::SimpleApp& app){
 
 
-// CROW_ROUTE(app, "/appointments")
-        // .methods("GET"_method)([](){
-        //     auto appointments = Appointment::getAllAppointmentsFromDatabase();
-        //     crow::json::wvalue result;
-        //     for (size_t i = 0; i < appointments.size(); i++) {
-        //         result[i]["id"] = appointments[i]->getAppointmentID();
-        //         result[i]["patient_id"] = appointments[i]->getPatient()->getPatientID();
-        //         result[i]["patient_name"] = appointments[i]->getPatient()->getName();
-        //         result[i]["doctor_id"] = appointments[i]->getDoctor()->getDoctorID();
-        //         result[i]["doctor_name"] = appointments[i]->getDoctor()->getName();
-        //         result[i]["date"] = appointments[i]->getDate();
-        //         result[i]["time"] = appointments[i]->getTime();
-        //         delete appointments[i];
-        //     }
-        //     return crow::response{result};
-        // });
+        CROW_ROUTE(app, "/appointments")
+        .methods("GET"_method)([](){
+            auto appointments = Appointment::getAllAppointmentsFromDatabase();
+            crow::json::wvalue result;
+            for (size_t i = 0; i < appointments.size(); i++) {
+                result[i]["id"] = appointments[i]->getAppointmentID();
+                result[i]["patient_id"] = appointments[i]->getPatient()->getPatientID();
+                result[i]["patient_name"] = appointments[i]->getPatient()->getName();
+                result[i]["doctor_id"] = appointments[i]->getDoctor()->getDoctorID();
+                result[i]["doctor_name"] = appointments[i]->getDoctor()->getName();
+                result[i]["date"] = appointments[i]->getDate();
+                result[i]["time"] = appointments[i]->getTime();
+                delete appointments[i];
+            }
+            auto res = crow::response{result};
+            add_cors_headers(res);
+            return res;
+        });
 
         CROW_ROUTE(app, "/appointments")
         .methods("POST"_method)([](const crow::request& req){
@@ -53,9 +55,13 @@ void registerAppointmentRoutes(crow::SimpleApp& app){
                     result["id"] = appointment.getAppointmentID();
                     return crow::response{result};
                 }
-                return crow::response(500, "Failed to save appointment");
+                auto res = crow::response(500, "Failed to save appointment");
+                add_cors_headers(res);
+                return res;
             } catch (const std::exception& e) {
-                return crow::response(500, e.what());
+                auto res = crow::response(500, e.what());
+                add_cors_headers(res);
+                return res;
             }
         });
 
@@ -76,7 +82,10 @@ void registerAppointmentRoutes(crow::SimpleApp& app){
             result["time"] = appointment->getTime();
             
             delete appointment;
-            return crow::response{result};
+            
+            auto res = crow::response{result};
+            add_cors_headers(res);
+            return res;
         });
 
         CROW_ROUTE(app, "/appointments/<int>")
@@ -105,9 +114,14 @@ void registerAppointmentRoutes(crow::SimpleApp& app){
                 }
                 
                 delete appointment;
-                return crow::response(500, "Failed to update appointment");
+
+                auto res = crow::response(500, "Failed to update appointment");
+                add_cors_headers(res);
+                return res;
             } catch (const std::exception& e) {
-                return crow::response(500, e.what());
+                auto res = crow::response(500, e.what());
+                add_cors_headers(res);
+                return res;
             }
         });
 
@@ -124,7 +138,10 @@ void registerAppointmentRoutes(crow::SimpleApp& app){
             }
             
             delete appointment;
-            return crow::response(500, "Failed to delete appointment");
+
+            auto res = crow::response(500, "Failed to delete appointment");
+            add_cors_headers(res);
+            return res;
         });
 
     }

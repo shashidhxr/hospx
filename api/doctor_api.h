@@ -6,23 +6,26 @@
 #include "doctor.h"
 // #include "appointment.h"
 #include "patient.h"
+// #include "cors_config.h"
 
 void registerDoctorRoutes(crow::SimpleApp& app){
 
- // CROW_ROUTE(app, "/doctors")
-        // .methods("GET"_method)([](){
-        //     auto doctors = Doctor::getAllDoctorsFromDatabase();
-        //     crow::json::wvalue result;
-        //     for (size_t i = 0; i < doctors.size(); i++) {
-        //         result[i]["id"] = doctors[i]->getDoctorID();
-        //         result[i]["user_id"] = doctors[i]->getUserID();
-        //         result[i]["name"] = doctors[i]->getName();
-        //         result[i]["contact"] = doctors[i]->getContact();
-        //         result[i]["specialization"] = doctors[i]->getSpecialization();
-        //         delete doctors[i];
-        //     }
-        //     return crow::response{result};
-        // });
+        CROW_ROUTE(app, "/doctors")
+        .methods("GET"_method)([](){
+            auto doctors = Doctor::getAllDoctorsFromDatabase();
+            crow::json::wvalue result;
+            for (size_t i = 0; i < doctors.size(); i++) {
+                result[i]["id"] = doctors[i]->getDoctorID();
+                result[i]["user_id"] = doctors[i]->getUserID();
+                result[i]["name"] = doctors[i]->getName();
+                result[i]["contact"] = doctors[i]->getContact();
+                result[i]["specialization"] = doctors[i]->getSpecialization();
+                delete doctors[i];
+            }
+            auto res = crow::response{result};
+            add_cors_headers(res);
+            return res;
+        });
 
         CROW_ROUTE(app, "/doctors")
         .methods("POST"_method)([](const crow::request& req){
@@ -44,7 +47,9 @@ void registerDoctorRoutes(crow::SimpleApp& app){
                 }
                 return crow::response(500, "Failed to save doctor");
             } catch (const std::exception& e) {
-                return crow::response(500, e.what());
+                auto res = crow::response(500, e.what());
+                add_cors_headers(res);
+                return res;
             }
         });
 
@@ -63,7 +68,10 @@ void registerDoctorRoutes(crow::SimpleApp& app){
             result["specialization"] = doctor->getSpecialization();
             
             delete doctor;
-            return crow::response{result};
+
+            auto res = crow::response{result};
+            add_cors_headers(res);
+            return res;    
         });
 
         CROW_ROUTE(app, "/doctors/<int>/appointments")
@@ -101,9 +109,13 @@ void registerDoctorRoutes(crow::SimpleApp& app){
                 doctor->prescribeMedicine(patientID, medicine, dosage);
                 delete doctor;
                 
-                return crow::response(200, "Prescription created successfully");
+                auto res = crow::response(200, "Prescription created successfully");
+                add_cors_headers(res);
+                return res;
             } catch (const std::exception& e) {
-                return crow::response(500, e.what());
+                auto res = crow::response(500, e.what());
+                add_cors_headers(res);
+                return res;
             }
         });
 

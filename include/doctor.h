@@ -19,6 +19,7 @@ public:
     bool saveToDatabase();
     User* getUserFromDatabase(int userID);
     std::vector<User*> getAllUsersFromDatabase();
+    static std::vector<Doctor*> getAllDoctorsFromDatabase();
     
     // inherited methods
     static Doctor* getDoctorFromDatabase(int doctorID);
