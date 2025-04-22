@@ -1,0 +1,21 @@
+OOPs concepts
+Encapsulation: All class members are private with public getters/setters
+
+Inheritance: Patient, Doctor, Receptionist, and Admin inherit from User
+
+Single Responsibility: Each class has a clear, single purpose
+
+Composition: Appointment and MedicalRecord use composition with Patient/Doctor
+
+Polymorphism: Base User class allows for polymorphic behavior
+
+Low Coupling: Classes interact through well-defined interfaces
+
+High Cohesion: Related functionality is grouped together
+
+
+Design Patterns
+Factory Pattern - For creating different user types -> admin, doctor, patient, receptionist
+Singleton Pattern - For system-wide components like database connection -> db
+Repository Pattern - For seperation of concerns -> cleaner structure
+Chain of Responsibility - For passing the 
