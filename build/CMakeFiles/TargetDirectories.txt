@@ -1,3 +1,0 @@
-/home/shashidhar/dev0/hospx/build/CMakeFiles/hospx.dir
-/home/shashidhar/dev0/hospx/build/CMakeFiles/edit_cache.dir
-/home/shashidhar/dev0/hospx/build/CMakeFiles/rebuild_cache.dir
