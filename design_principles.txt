@@ -18,4 +18,4 @@ Design Patterns
 Factory Pattern - For creating different user types -> admin, doctor, patient, receptionist
 Singleton Pattern - For system-wide components like database connection -> db
 Repository Pattern - For seperation of concerns -> cleaner structure
-Chain of Responsibility - For passing the 
+Chain of Responsibility - For passing the values down to other classes

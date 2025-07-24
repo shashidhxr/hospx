@@ -2,11 +2,10 @@
 #include "database_handler.h"
 #include "api_server.h"
 #include "db_seed.h"
-#include <cstdlib> // for std::remove
+#include <cstdlib> 
 
 int main() {
     try {
-        // Delete existing database file to start fresh
         std::remove("hospital.db");
         
         // Initialize database
